@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mydashboard-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: dashboard
+      MYSQL_USER: dashboard
+      MYSQL_PASSWORD: dashboard
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mydashboard-api
+    environment:
+      APP_PORT: 8080
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: dashboard
+      DB_PASS: dashboard
+      DB_NAME: dashboard
+      ENABLE_SIMULATION: "true"
+      SIM_METRICS_EVERY: 1s
+      SIM_INSIGHTS_EVERY: 5s
+      ALLOWED_ORIGINS: "*"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+volumes:
+  mysql_data:

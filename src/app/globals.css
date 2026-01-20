@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #07090d;
+  --foreground: #f4f1e8;
+  --gold: #d6b36a;
+  --gold-soft: #f1d7a1;
+  --panel: rgba(10, 12, 18, 0.82);
+  --panel-border: rgba(214, 179, 106, 0.18);
+  --panel-edge: rgba(255, 255, 255, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-body);
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(214, 179, 106, 0.16), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(91, 116, 255, 0.18), transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(215, 111, 82, 0.18), transparent 50%),
+    linear-gradient(135deg, #050608 0%, #0b0f16 45%, #080a0f 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), "Georgia", serif;
+  }
+
+  .text-gold {
+    color: var(--gold);
+  }
+
+  .text-gold-soft {
+    color: var(--gold-soft);
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    box-shadow:
+      0 0 40px rgba(214, 179, 106, 0.08),
+      inset 0 0 0 1px var(--panel-edge);
+    backdrop-filter: blur(18px);
+  }
+
+  .panel-strong {
+    background: rgba(8, 10, 14, 0.92);
+    border: 1px solid rgba(214, 179, 106, 0.3);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  }
+
+  .glow-ring {
+    box-shadow:
+      0 0 20px rgba(214, 179, 106, 0.3),
+      0 0 45px rgba(214, 179, 106, 0.2);
+  }
+
+  .grid-fade {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
