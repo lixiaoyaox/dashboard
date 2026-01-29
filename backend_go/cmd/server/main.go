@@ -7,19 +7,27 @@ import (
   "net/http"
   "os"
   "os/signal"
+  "path/filepath"
   "strconv"
   "syscall"
   "time"
 
+  "github.com/joho/godotenv"
   _ "github.com/go-sql-driver/mysql"
 
+  "mydashboard-backend/internal/ai"
   "mydashboard-backend/internal/api"
+  "mydashboard-backend/internal/service"
   "mydashboard-backend/internal/store"
 )
 
 func main() {
+  loadEnv()
   cfg := loadConfig()
 //读取环境变量
+  if cfg.deepseekAPIKey == "" {
+    log.Fatal("DEEPSEEK_API_KEY is required")
+  }
   db, err := sql.Open("mysql", cfg.dsn)
   if err != nil {
     log.Fatalf("db open failed: %v", err)
@@ -32,7 +40,13 @@ func main() {
     log.Fatalf("db ping failed: %v", err)
   }
 
-  apiServer := api.NewServer(store.New(db))
+  deepseekClient := ai.NewDeepSeekClient(cfg.deepseekBaseURL, cfg.deepseekAPIKey, cfg.deepseekModel).
+    WithLogger(log.New(os.Stdout, "deepseek ", log.LstdFlags))
+
+  repoStore := store.New(db)
+  metricsService := service.NewMetricsService(repoStore, service.NewSimulation())
+  insightsService := service.NewInsightsService(repoStore, deepseekClient)
+  apiServer := api.NewServer(metricsService, insightsService)
   httpServer := &http.Server{
     Addr:              cfg.addr,
     Handler:           apiServer.Routes(cfg.allowedOrigins),
@@ -68,6 +82,37 @@ type config struct {
   enableSimulation bool
   metricsEvery     time.Duration
   insightsEvery    time.Duration
+  deepseekAPIKey   string
+  deepseekBaseURL  string
+  deepseekModel    string
+}
+
+func loadEnv() {
+  cwd, err := os.Getwd()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  var candidates []string
+  dir := cwd
+  for {
+    candidates = append(candidates, filepath.Join(dir, ".env"))
+    parent := filepath.Dir(dir)
+    if parent == dir {
+      break
+    }
+    dir = parent
+  }
+
+  for _, path := range candidates {
+    if _, err := os.Stat(path); err == nil {
+      if err := godotenv.Load(path); err != nil {
+        log.Fatalf("failed to load .env at %s: %v", path, err)
+      }
+      return
+    }
+  }
+  log.Fatal(".env file not found (searched upward from current directory)")
 }
 
 func loadConfig() config {
@@ -85,6 +130,9 @@ func loadConfig() config {
   metricsEvery := parseDurationEnv("SIM_METRICS_EVERY", 1*time.Second)
   insightsEvery := parseDurationEnv("SIM_INSIGHTS_EVERY", 5*time.Second)
   allowedOrigins := getEnv("ALLOWED_ORIGINS", "*")
+  deepseekAPIKey := getEnv("DEEPSEEK_API_KEY", "")
+  deepseekBaseURL := getEnv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+  deepseekModel := getEnv("DEEPSEEK_MODEL", "deepseek-chat")
 
   return config{
     addr:             addr,
@@ -93,6 +141,9 @@ func loadConfig() config {
     enableSimulation: enableSimulation,
     metricsEvery:     metricsEvery,
     insightsEvery:    insightsEvery,
+    deepseekAPIKey:   deepseekAPIKey,
+    deepseekBaseURL:  deepseekBaseURL,
+    deepseekModel:    deepseekModel,
   }
 }
 

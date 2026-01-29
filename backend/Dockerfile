@@ -1,12 +1,11 @@
-FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY go.mod ./
-RUN go mod download
-COPY . .
-RUN go build -o /app/server ./cmd/server
+﻿FROM python:3.11-slim
 
-FROM alpine:3.19
 WORKDIR /app
-COPY --from=builder /app/server ./server
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+
+ENV APP_PORT=8080
 EXPOSE 8080
-CMD ["./server"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
